@@ -37,21 +37,42 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-function getLabels(prNumber, token) {
+function getPullRequestComments(octokit, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
-        const octokit = github.getOctokit(token);
         const context = github.context;
-        const prCommentsParams = {
+        const prParams = {
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: prNumber
         };
-        const comments = yield octokit.rest.issues.listComments(prCommentsParams);
-        const pullRequestComments = comments.data.filter(comment => comment !== null).map(comment => comment.body);
-        const txt = pullRequestComments.join('\n');
-        core.debug(txt);
-        core.setOutput('log', txt);
-        return new Set(txt);
+        const comments = yield octokit.rest.issues.listComments(prParams);
+        return comments.data.map(comment => { var _a; return (_a = comment === null || comment === void 0 ? void 0 : comment.body) !== null && _a !== void 0 ? _a : ''; }).filter(x => x !== '');
+    });
+}
+function getCommitComments(octokit, prNumber) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const context = github.context;
+        const prParams = {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+        };
+        const commits = yield octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}/commits', prParams);
+        return commits.data.map(commit => { var _a, _b; return (_b = (_a = commit === null || commit === void 0 ? void 0 : commit.commit) === null || _a === void 0 ? void 0 : _a.message) !== null && _b !== void 0 ? _b : ''; }).filter(x => x !== '');
+    });
+}
+function getLabels(prNumber, token) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = github.getOctokit(token);
+        const prComments = yield getPullRequestComments(octokit, prNumber);
+        core.debug(`prComments length: ${prComments.length}`);
+        for (const c of prComments)
+            core.debug(c);
+        const commitComments = yield getCommitComments(octokit, prNumber);
+        core.debug(`commitComments length: ${commitComments.length}`);
+        for (const c of commitComments)
+            core.debug(c);
+        return new Set();
     });
 }
 function run() {
