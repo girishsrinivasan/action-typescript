@@ -50,13 +50,14 @@ function getLabels(prNumber, token) {
         const pullRequestComments = comments.filter(comment => comment !== null).map(comment => comment.body);
         const txt = pullRequestComments.join('\n');
         core.debug(txt);
-        core.setOutput("log", txt);
+        core.setOutput('log', txt);
         return new Set(txt);
     });
 }
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.debug("In run.");
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
             const prNumber = parseInt(core.getInput('prNumber', { required: true }), 10);
             if (!token)
