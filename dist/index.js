@@ -47,11 +47,11 @@ function getLabels(prNumber, token) {
             issue_number: prNumber
         };
         const comments = yield octokit.paginate(octokit.rest.issues.listComments, prCommentsParams);
-        const pullRequestComments = comments
-            .filter(comment => comment !== null)
-            .map(comment => comment.body);
-        core.debug(pullRequestComments.join('\n'));
-        return new Set();
+        const pullRequestComments = comments.filter(comment => comment !== null).map(comment => comment.body);
+        const txt = pullRequestComments.join('\n');
+        core.debug(txt);
+        core.setOutput("log", txt);
+        return new Set(txt);
     });
 }
 function run() {
