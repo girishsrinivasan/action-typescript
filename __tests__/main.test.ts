@@ -1,9 +1,6 @@
 import {expect, test} from '@jest/globals'
 
-test('throws invalid number', async () => {
-  
-})
-
+test('throws invalid number', async () => {})
 
 /*
 import * as process from 'process'

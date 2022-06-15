@@ -47,8 +47,10 @@ function getLabels(prNumber, token) {
             issue_number: prNumber
         };
         const comments = yield octokit.paginate(octokit.rest.issues.listComments, prCommentsParams);
-        const pullRequestComments = comments.filter(comment => comment !== null).map(comment => comment.body);
-        core.info(pullRequestComments.join('\n'));
+        const pullRequestComments = comments
+            .filter(comment => comment !== null)
+            .map(comment => comment.body);
+        core.debug(pullRequestComments.join('\n'));
         return new Set();
     });
 }
@@ -58,8 +60,8 @@ function run() {
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
             const prNumber = parseInt(core.getInput('prNumber', { required: true }), 10);
             if (!token)
-                throw new Error("No token specified");
-            yield (getLabels(prNumber, token));
+                throw new Error('No token specified');
+            yield getLabels(prNumber, token);
         }
         catch (error) {
             if (error instanceof Error)
