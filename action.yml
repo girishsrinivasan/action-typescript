@@ -1,11 +1,13 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Label pull requests'
+description: 'Label pull request based on comments'
+author: 'Verint'
 inputs:
-  milliseconds: # change this
+  prNumber: 
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: 'pull request number'
+  token: 
+    required: true
+    description: 'github token'  
 runs:
   using: 'node16'
   main: 'dist/index.js'
