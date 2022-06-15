@@ -46,8 +46,8 @@ function getLabels(prNumber, token) {
             repo: context.repo.repo,
             issue_number: prNumber
         };
-        const comments = yield octokit.paginate(octokit.rest.issues.listComments, prCommentsParams);
-        const pullRequestComments = comments.filter(comment => comment !== null).map(comment => comment.body);
+        const comments = yield octokit.rest.issues.listComments(prCommentsParams);
+        const pullRequestComments = comments.data.filter(comment => comment !== null).map(comment => comment.body);
         const txt = pullRequestComments.join('\n');
         core.debug(txt);
         core.setOutput('log', txt);
@@ -59,7 +59,7 @@ function run() {
         try {
             core.debug('In run.');
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
-            const prNumber = parseInt(core.getInput('prNumber', { required: true }), 10);
+            const prNumber = parseInt(core.getInput('prNumber', { required: true }));
             if (!token)
                 throw new Error('No token specified');
             yield getLabels(prNumber, token);
