@@ -57,7 +57,7 @@ function getLabels(prNumber, token) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.debug("In run.");
+            core.debug('In run.');
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
             const prNumber = parseInt(core.getInput('prNumber', { required: true }), 10);
             if (!token)
