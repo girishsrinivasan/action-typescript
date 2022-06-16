@@ -93,8 +93,7 @@ function run() {
             if (!token)
                 return;
             const commitTypes = yield getCommitTypes(prNumber, token);
-            core.setOutput('commit_types', commitTypes);
-            core.info([...commitTypes].join(','));
+            core.setOutput('commit_types', [...commitTypes].join(','));
         }
         catch (error) {
             if (error instanceof Error)

@@ -52,8 +52,7 @@ async function run(): Promise<void> {
     const prNumber = parseInt(core.getInput('pull_number', {required: true}))
     if (!token) return
     const commitTypes = await getCommitTypes(prNumber, token)
-    core.setOutput('commit_types', commitTypes)
-    core.info([...commitTypes].join(','))
+    core.setOutput('commit_types', [...commitTypes].join(','))
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
