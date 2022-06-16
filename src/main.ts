@@ -1,6 +1,11 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import {GitHub} from '@actions/github/lib/utils'
+import { GitHub } from '@actions/github/lib/utils'
+
+const commitTypeToLabelMap = new Map([
+  ['fix', 'bug'],
+  ['feat', 'enhancement']
+]);
 
 //Get the comments that are directly on the pull request
 async function getPullRequestComments(octokit: InstanceType<typeof GitHub>, prNumber: number): Promise<string[]> {
@@ -41,20 +46,29 @@ export function extractCommitTypesFromComments(comments: string[]): Set<string> 
   const breakingAndWSRegEx = /[\s!]/gi
   function extractFromComment(comment: string): string {
     const matches = comment.match(typeRegEx)
-    return matches ? matches[1].replace(breakingAndWSRegEx, '').replace(scopeRegEx, '') : ''
+    return matches ? matches[1].replace(breakingAndWSRegEx, '').replace(scopeRegEx, '').toLowerCase() : ''
   }
   return new Set<string>(comments.map(c => extractFromComment(c)).filter(c => c !== ''))
 }
 
+export function commitTypesToLabels(types: Set<string>) {
+  const labels = [...types].map(c => commitTypeToLabelMap.has(c) ? commitTypeToLabelMap.get(c) ?? '' : c).filter(c => c !== '')
+  return new Set<string>(labels)
+}
+
 async function run(): Promise<void> {
   try {
-    const token = core.getInput('token', {required: true}) || process.env.GITHUB_TOKEN
-    const prNumber = parseInt(core.getInput('pull_number', {required: true}))
+    const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN
+    const prNumber = parseInt(core.getInput('pull_number', { required: true }))
     if (!token) return
     const commitTypes = await getCommitTypes(prNumber, token)
+    const labels = commitTypesToLabels(commitTypes)
+
     core.setOutput('commit_types', [...commitTypes].join(','))
+
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    const message = error instanceof Error ? error.message:"Unknown exception was thrown"
+    core.setFailed(message)
   }
 }
 
