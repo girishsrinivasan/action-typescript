@@ -1,31 +1,17 @@
 import {expect, test} from '@jest/globals'
+import {extractCommitTypesFromComments} from '../src/main'
 
-test('throws invalid number', async () => {})
+test('Labels from comments basic', async () => {
+  const comments = [
+    'feat: blah blah\nBREAKING CHANGE: `extends` key',
+    'feat(api)!: blah blah',
+    'chore!: blah blah',
+    '\n   \nfix(wfm)!: blah blah',
+    //the next line is not valid since the type is not on the header. we will ignore the type called refactor
+    '\n\nfirstline\nrefactor!: blah blah'
+  ]
 
-/*
-import * as process from 'process'
-import * as cp from 'child_process'
-import * as path from 'path'
-import {expect, test} from '@jest/globals'
-
-
-test('throws invalid number', async () => {
-  
+  const actual = extractCommitTypesFromComments(comments)
+  const expected = new Set<String>(['feat', 'chore', 'fix'])
+  expect(actual).toEqual(expected)
 })
-
-test('wait 500 ms', async () => {
- 
-})
-*/
-// shows how the runner will run a javascript action with env / stdout protocol
-/*
-test('test runs', () => {
-  process.env['INPUT_MILLISECONDS'] = '50'
-  const np = process.execPath
-  const ip = path.join(__dirname, '..', 'lib', 'main.js')
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env
-  }
-  console.log(cp.execFileSync(np, [ip], options).toString())
-})
-*/

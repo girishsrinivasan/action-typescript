@@ -22,7 +22,7 @@ jobs:
       - uses: girishsrinivasan/action-typescript@main
         id: testaction
         with:
-          prNumber: 9
+          pull_number: 9
           token: ${{  secrets.GITHUB_TOKEN }}
-      - run: echo "The output was ${{ steps.testaction.outputs.log }}"
+      - run: echo "The output was ${{ steps.testaction.outputs.commit_types }}"
 

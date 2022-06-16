@@ -35,8 +35,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.extractCommitTypesFromComments = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+//Get the comments that are directly on the pull request
 function getPullRequestComments(octokit, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
         const context = github.context;
@@ -49,6 +51,7 @@ function getPullRequestComments(octokit, prNumber) {
         return comments.data.map(comment => { var _a; return (_a = comment === null || comment === void 0 ? void 0 : comment.body) !== null && _a !== void 0 ? _a : ''; }).filter(x => x !== '');
     });
 }
+//Get the comments that are on the commits that are in the pull request
 function getCommitComments(octokit, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
         const context = github.context;
@@ -61,29 +64,37 @@ function getCommitComments(octokit, prNumber) {
         return commits.data.map(commit => { var _a, _b; return (_b = (_a = commit === null || commit === void 0 ? void 0 : commit.commit) === null || _a === void 0 ? void 0 : _a.message) !== null && _b !== void 0 ? _b : ''; }).filter(x => x !== '');
     });
 }
-function getLabels(prNumber, token) {
+function getCommitTypes(prNumber, token) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = github.getOctokit(token);
         const prComments = yield getPullRequestComments(octokit, prNumber);
-        core.debug(`prComments length: ${prComments.length}`);
-        for (const c of prComments)
-            core.debug(c);
         const commitComments = yield getCommitComments(octokit, prNumber);
-        core.debug(`commitComments length: ${commitComments.length}`);
-        for (const c of commitComments)
-            core.debug(c);
-        return new Set();
+        const comments = prComments.concat(commitComments);
+        return extractCommitTypesFromComments(comments);
     });
 }
+function extractCommitTypesFromComments(comments) {
+    //Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/#summary
+    const typeRegEx = /^\s*([\S:]+?):\s/;
+    const scopeRegEx = /\(.*?\)/gi;
+    const breakingAndWSRegEx = /[\s!]/gi;
+    function extractFromComment(comment) {
+        const matches = comment.match(typeRegEx);
+        return matches ? matches[1].replace(breakingAndWSRegEx, '').replace(scopeRegEx, '') : '';
+    }
+    return new Set(comments.map(c => extractFromComment(c)).filter(c => c !== ''));
+}
+exports.extractCommitTypesFromComments = extractCommitTypesFromComments;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.debug('In run.');
+            core.info('In run.');
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
-            const prNumber = parseInt(core.getInput('prNumber', { required: true }));
+            const prNumber = parseInt(core.getInput('pull_number', { required: true }));
             if (!token)
                 throw new Error('No token specified');
-            yield getLabels(prNumber, token);
+            const commitTypes = yield getCommitTypes(prNumber, token);
+            core.info([...commitTypes].join(','));
         }
         catch (error) {
             if (error instanceof Error)

@@ -2,15 +2,15 @@ name: 'Label pull requests'
 description: 'Label pull request based on comments'
 author: 'Verint'
 inputs:
-  prNumber: 
+  pull_number: 
     required: true
     description: 'pull request number'
   token: 
     required: true
     description: 'github token'  
 outputs:
-  log: # id of output
-    description: 'Output log. Just for debugging'
+  commit_types: 
+    description: 'The commit types from in the pull request and commit messages'
 runs:
   using: 'node16'
   main: 'dist/index.js'
