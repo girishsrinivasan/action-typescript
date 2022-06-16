@@ -20,9 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: girishsrinivasan/action-typescript@main
-        id: testaction
+        id: autolabel
         with:
           pull_number: 9
           token: ${{  secrets.GITHUB_TOKEN }}
-      - run: echo "The output was ${{ steps.testaction.outputs.commit_types }}"
+      - run: echo "The following labels were applied on the pull request[${{ steps.autolabel.outputs.labels }}]"
 

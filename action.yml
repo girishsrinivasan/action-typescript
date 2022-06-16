@@ -9,8 +9,8 @@ inputs:
     required: true
     description: 'github token'  
 outputs:
-  commit_types: 
-    description: 'The commit types from in the pull request and commit messages'
+  labels: 
+    description: 'The lables that were applied on the pull request'
 runs:
   using: 'node16'
   main: 'dist/index.js'

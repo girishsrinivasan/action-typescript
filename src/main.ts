@@ -1,11 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
-import { GitHub } from '@actions/github/lib/utils'
-
-const commitTypeToLabelMap = new Map([
-  ['fix', 'bug'],
-  ['feat', 'enhancement']
-]);
+import {GitHub} from '@actions/github/lib/utils'
+import {extractCommitTypesFromComments, commitTypesToLabels} from './commentsparser'
 
 //Get the comments that are directly on the pull request
 async function getPullRequestComments(octokit: InstanceType<typeof GitHub>, prNumber: number): Promise<string[]> {
@@ -31,43 +27,40 @@ async function getCommitComments(octokit: InstanceType<typeof GitHub>, prNumber:
   return commits.data.map(commit => commit?.commit?.message ?? '').filter(x => x !== '')
 }
 
-async function getCommitTypes(prNumber: number, token: string): Promise<Set<string>> {
-  const octokit = github.getOctokit(token)
+//Get comments from both the pull request itself and the commits in the pull request
+async function getComments(octokit: InstanceType<typeof GitHub>, prNumber: number): Promise<string[]> {
   const prComments = await getPullRequestComments(octokit, prNumber)
   const commitComments = await getCommitComments(octokit, prNumber)
-  const comments = prComments.concat(commitComments)
-  return extractCommitTypesFromComments(comments)
+  return prComments.concat(commitComments)
 }
 
-export function extractCommitTypesFromComments(comments: string[]): Set<string> {
-  //Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/#summary
-  const typeRegEx = /^\s*([\S:]+?):\s/
-  const scopeRegEx = /\(.*?\)/gi
-  const breakingAndWSRegEx = /[\s!]/gi
-  function extractFromComment(comment: string): string {
-    const matches = comment.match(typeRegEx)
-    return matches ? matches[1].replace(breakingAndWSRegEx, '').replace(scopeRegEx, '').toLowerCase() : ''
+//Label the pull request
+async function labelPullRequest(octokit: InstanceType<typeof GitHub>, prNumber: number, labels: Set<string>): Promise<void> {
+  if (labels.size === 0) return
+
+  const context = github.context
+  const params = {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    issue_number: prNumber,
+    labels: [...labels]
   }
-  return new Set<string>(comments.map(c => extractFromComment(c)).filter(c => c !== ''))
-}
-
-export function commitTypesToLabels(types: Set<string>) {
-  const labels = [...types].map(c => commitTypeToLabelMap.has(c) ? commitTypeToLabelMap.get(c) ?? '' : c).filter(c => c !== '')
-  return new Set<string>(labels)
+  await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', params)
 }
 
 async function run(): Promise<void> {
   try {
-    const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN
-    const prNumber = parseInt(core.getInput('pull_number', { required: true }))
+    const token = core.getInput('token', {required: true}) || process.env.GITHUB_TOKEN
+    const prNumber = parseInt(core.getInput('pull_number', {required: true}))
     if (!token) return
-    const commitTypes = await getCommitTypes(prNumber, token)
+    const octokit = github.getOctokit(token)
+    const comments = await getComments(octokit, prNumber)
+    const commitTypes = extractCommitTypesFromComments(comments)
     const labels = commitTypesToLabels(commitTypes)
-
-    core.setOutput('commit_types', [...commitTypes].join(','))
-
+    await labelPullRequest(octokit, prNumber, labels)
+    core.setOutput('labels', [...labels].join(','))
   } catch (error) {
-    const message = error instanceof Error ? error.message:"Unknown exception was thrown"
+    const message = error instanceof Error ? error.message : 'Unknown exception was thrown'
     core.setFailed(message)
   }
 }

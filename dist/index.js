@@ -1,6 +1,37 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 9460:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.commitTypesToLabels = exports.extractCommitTypesFromComments = void 0;
+const commitTypeToLabelMap = new Map([
+    ['fix', 'bug'],
+    ['feat', 'enhancement']
+]);
+function extractCommitTypesFromComments(comments) {
+    //Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/#specification
+    //extract type from type(scope)!:space where (scope) and ! are optional
+    const typeRegEx = /^\s*([\w]+?)(?:\([\w+]+?\))?!?:\s/;
+    function extractFromComment(comment) {
+        const matches = comment.match(typeRegEx);
+        return matches ? matches[1].toLowerCase() : '';
+    }
+    return new Set(comments.map(c => extractFromComment(c)).filter(c => c !== ''));
+}
+exports.extractCommitTypesFromComments = extractCommitTypesFromComments;
+function commitTypesToLabels(types) {
+    const labels = [...types].map(c => { var _a; return (commitTypeToLabelMap.has(c) ? (_a = commitTypeToLabelMap.get(c)) !== null && _a !== void 0 ? _a : '' : c); }).filter(c => c !== '');
+    return new Set(labels);
+}
+exports.commitTypesToLabels = commitTypesToLabels;
+
+
+/***/ }),
+
 /***/ 3109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -35,9 +66,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractCommitTypesFromComments = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const commentsparser_1 = __nccwpck_require__(9460);
 //Get the comments that are directly on the pull request
 function getPullRequestComments(octokit, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -64,27 +95,29 @@ function getCommitComments(octokit, prNumber) {
         return commits.data.map(commit => { var _a, _b; return (_b = (_a = commit === null || commit === void 0 ? void 0 : commit.commit) === null || _a === void 0 ? void 0 : _a.message) !== null && _b !== void 0 ? _b : ''; }).filter(x => x !== '');
     });
 }
-function getCommitTypes(prNumber, token) {
+//Get comments from both the pull request itself and the commits in the pull request
+function getComments(octokit, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
-        const octokit = github.getOctokit(token);
         const prComments = yield getPullRequestComments(octokit, prNumber);
         const commitComments = yield getCommitComments(octokit, prNumber);
-        const comments = prComments.concat(commitComments);
-        return extractCommitTypesFromComments(comments);
+        return prComments.concat(commitComments);
     });
 }
-function extractCommitTypesFromComments(comments) {
-    //Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0/#summary
-    const typeRegEx = /^\s*([\S:]+?):\s/;
-    const scopeRegEx = /\(.*?\)/gi;
-    const breakingAndWSRegEx = /[\s!]/gi;
-    function extractFromComment(comment) {
-        const matches = comment.match(typeRegEx);
-        return matches ? matches[1].replace(breakingAndWSRegEx, '').replace(scopeRegEx, '') : '';
-    }
-    return new Set(comments.map(c => extractFromComment(c)).filter(c => c !== ''));
+//Label the pull request
+function labelPullRequest(octokit, prNumber, labels) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (labels.size === 0)
+            return;
+        const context = github.context;
+        const params = {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            labels: [...labels]
+        };
+        yield octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', params);
+    });
 }
-exports.extractCommitTypesFromComments = extractCommitTypesFromComments;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -92,12 +125,16 @@ function run() {
             const prNumber = parseInt(core.getInput('pull_number', { required: true }));
             if (!token)
                 return;
-            const commitTypes = yield getCommitTypes(prNumber, token);
-            core.setOutput('commit_types', [...commitTypes].join(','));
+            const octokit = github.getOctokit(token);
+            const comments = yield getComments(octokit, prNumber);
+            const commitTypes = (0, commentsparser_1.extractCommitTypesFromComments)(comments);
+            const labels = (0, commentsparser_1.commitTypesToLabels)(commitTypes);
+            yield labelPullRequest(octokit, prNumber, labels);
+            core.setOutput('labels', [...labels].join(','));
         }
         catch (error) {
-            if (error instanceof Error)
-                core.setFailed(error.message);
+            const message = error instanceof Error ? error.message : 'Unknown exception was thrown';
+            core.setFailed(message);
         }
     });
 }
