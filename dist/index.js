@@ -70,7 +70,6 @@ function getCommitTypes(prNumber, token) {
         const prComments = yield getPullRequestComments(octokit, prNumber);
         const commitComments = yield getCommitComments(octokit, prNumber);
         const comments = prComments.concat(commitComments);
-        core.info(comments.join(','));
         return extractCommitTypesFromComments(comments);
     });
 }
@@ -89,12 +88,12 @@ exports.extractCommitTypesFromComments = extractCommitTypesFromComments;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.info('In run.');
             const token = core.getInput('token', { required: true }) || process.env.GITHUB_TOKEN;
             const prNumber = parseInt(core.getInput('pull_number', { required: true }));
             if (!token)
-                throw new Error('No token specified');
+                return;
             const commitTypes = yield getCommitTypes(prNumber, token);
+            core.setOutput('commit_types', commitTypes);
             core.info([...commitTypes].join(','));
         }
         catch (error) {

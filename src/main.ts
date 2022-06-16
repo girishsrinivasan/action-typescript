@@ -31,7 +31,6 @@ async function getCommitTypes(prNumber: number, token: string): Promise<Set<stri
   const prComments = await getPullRequestComments(octokit, prNumber)
   const commitComments = await getCommitComments(octokit, prNumber)
   const comments = prComments.concat(commitComments)
-  core.info(comments.join(','))
   return extractCommitTypesFromComments(comments)
 }
 
@@ -49,11 +48,11 @@ export function extractCommitTypesFromComments(comments: string[]): Set<string> 
 
 async function run(): Promise<void> {
   try {
-    core.info('In run.')
     const token = core.getInput('token', {required: true}) || process.env.GITHUB_TOKEN
     const prNumber = parseInt(core.getInput('pull_number', {required: true}))
-    if (!token) throw new Error('No token specified')
+    if (!token) return
     const commitTypes = await getCommitTypes(prNumber, token)
+    core.setOutput('commit_types', commitTypes)
     core.info([...commitTypes].join(','))
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
