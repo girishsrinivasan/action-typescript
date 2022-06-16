@@ -70,6 +70,7 @@ function getCommitTypes(prNumber, token) {
         const prComments = yield getPullRequestComments(octokit, prNumber);
         const commitComments = yield getCommitComments(octokit, prNumber);
         const comments = prComments.concat(commitComments);
+        core.info(comments.join(','));
         return extractCommitTypesFromComments(comments);
     });
 }

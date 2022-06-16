@@ -31,6 +31,7 @@ async function getCommitTypes(prNumber: number, token: string): Promise<Set<stri
   const prComments = await getPullRequestComments(octokit, prNumber)
   const commitComments = await getCommitComments(octokit, prNumber)
   const comments = prComments.concat(commitComments)
+  core.info(comments.join(','))
   return extractCommitTypesFromComments(comments)
 }
 
