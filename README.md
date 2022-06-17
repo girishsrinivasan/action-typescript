@@ -15,6 +15,16 @@ Automatically extract types from comments and use that to label pull request. Au
 
 See [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
 
+## Usage:
+
+```yaml
+uses: girishsrinivasan/action-typescript@main
+id: autolabel
+with:
+  pull_number: 9
+  token: ${{  secrets.GITHUB_TOKEN }}
+```
+
 ## Building
 
 > You will need node 16 to build.
@@ -34,16 +44,5 @@ npm run all
 ```
 
 
-```yaml
-uses: girishsrinivasan/action-typescript@main
-id: autolabel
-with:
-  pull_number: 9
-  token: ${{  secrets.GITHUB_TOKEN }}
-```
 
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
 
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
